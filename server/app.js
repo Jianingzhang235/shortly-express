@@ -93,17 +93,67 @@ app.post('/signup', (req, res, next) => {
   var username = req.body.username;
   var password = req.body.password;
   return models.Users.get({username: username})
-    .then(user => {
-      if (user) {
+    .then(userData => {
+      if (userData) {
       res.redirect('/signup');
     } else {
       models.Users.create({username: username, password: password});
       res.redirect('/');
+      console.log('user created')
     }
   })
 });
 
+//if username does not exist -> go back to /login
+//if username exists --> .get({username: username})
+//AND password exists/correct
+  //comparing user's submitted password to the hashedpw in db
+  //compareHash = (attempted, stored, salt) => {
+  
+//if incorrect -> go back to /login
+//if correct,  '/'
 
+//check username: compare username 
+app.post('/login', (req, res, next) => {
+  var username = req.body.username;
+  var password = req.body.password;
+
+  //if username doesn't exist, res.redirect('/login')
+return models.Users.get({username: username})
+  .then(storedData => {
+    if (storedData) {
+      // res.redirect('/');
+      var matchingPass = models.Users.compare(password, storedData.password, storedData.salt);
+      console.log('password match? ' + matchingPass)
+
+      if (matchingPass) {
+        res.redirect('/');
+      } else {
+      res.redirect('/login');
+      }
+    
+    } else {
+      res.redirect('/login');
+    }
+      // if (models.Users.compare(password, storedData.password, salt)) {
+      //   res.redirect('/');
+      //   console.log('HELLO')
+      // } else {
+      //   res.redirect('/login');
+      // } 
+
+
+    // } else {
+    //   res.redirect('/login');
+    // }
+  });
+});      
+  //if username exists
+    //compare password
+      //if pass word is correct
+        //go next '/'
+  //storedData exists and models.Users.compare(aptPassword, storedData.password, storedData.salt)
+  
 /************************************************************/
 // Handle the code parameter route last - if all other routes fail
 // assume the route is a short code and try and handle it here.
