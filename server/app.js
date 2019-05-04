@@ -77,10 +77,31 @@ app.post('/links',
 /************************************************************/
 // Write your authentication routes here
 /************************************************************/
-  app.get('/login', (req, res) => {
-    res.render('index');
-  });
-  // app.post('/links', (req, res, next) => {
+app.post('/signup', (req, res, next) => {
+  //we need username, password -> put in object to store each user data
+    //access Users info --> models.Users.get({username})
+    //var username = req.body.username
+    //var password = req.body.password
+    //body is father of entire element
+  //if username data exists,
+    //res.redirect(go '/signup')!
+  //if username doesn't exist, we can sign up user
+    //create username and password
+      //{username: username, password: password}
+    //res.redirect('/')
+
+  var username = req.body.username;
+  var password = req.body.password;
+  return models.Users.get({username: username})
+    .then(user => {
+      if (user) {
+      res.redirect('/signup');
+    } else {
+      models.Users.create({username: username, password: password});
+      res.redirect('/');
+    }
+  })
+});
 
 
 /************************************************************/
