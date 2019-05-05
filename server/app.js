@@ -15,19 +15,21 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '../public')));
 
+app.use(require('./middleware/cookieParser'));
+app.use(Auth.createSession);
 
 
-app.get('/', 
+app.get('/', Auth.verifySession,
 (req, res) => {
   res.render('index');
 });
 
-app.get('/create', 
+app.get('/create', Auth.verifySession,
 (req, res) => {
   res.render('index');
 });
 
-app.get('/links', 
+app.get('/links', Auth.verifySession,
 (req, res, next) => {
   models.Links.getAll()
     .then(links => {
@@ -38,7 +40,7 @@ app.get('/links',
     });
 });
 
-app.post('/links', 
+app.post('/links', Auth.verifySession,
 (req, res, next) => {
   var url = req.body.url;
   if (!models.Links.isValidUrl(url)) {
@@ -92,16 +94,26 @@ app.post('/signup', (req, res, next) => {
 
   var username = req.body.username;
   var password = req.body.password;
+  
   return models.Users.get({username: username})
-    .then(userData => {
-      if (userData) {
-      res.redirect('/signup');
-    } else {
-      models.Users.create({username: username, password: password});
+    .then(user => {
+      //upgrade session / associate with user
+      if (user) {
+        throw user;
+      }
+      return models.Users.create({username: username, password: password});
+    })
+    .then(user => {
+      return Sessions.update({hash: req.session.hash}, {userId: results.insertId})
+    })
+    .then(() => {
+      // redirect user to / route
       res.redirect('/');
-      console.log('user created')
-    }
-  })
+      console.log('user created');
+    })
+    .catch(user => {
+      res.redirect('/signup');
+    })
 });
 
 //if username does not exist -> go back to /login
@@ -114,40 +126,31 @@ app.post('/signup', (req, res, next) => {
 //if correct,  '/'
 
 //check username: compare username 
+app.get('/login', (req, res) => {
+  res.render('login');
+});
+
 app.post('/login', (req, res, next) => {
   var username = req.body.username;
   var password = req.body.password;
 
   //if username doesn't exist, res.redirect('/login')
-return models.Users.get({username: username})
-  .then(storedData => {
-    if (storedData) {
-      // res.redirect('/');
-      var matchingPass = models.Users.compare(password, storedData.password, storedData.salt);
-      console.log('password match? ' + matchingPass)
-
-      if (matchingPass) {
-        res.redirect('/');
-      } else {
-      res.redirect('/login');
+  return models.Users.get({username: username})
+    .then(storedData => {
+      //if !found or !valid password
+      if (!user || models.User.compare(password, storedData.password, storedData.salt)){
+        //redirect to /login
       }
-    
-    } else {
+      return models.Sessions.update({id: req.session.id}, {userId: user.id});
+    })
+    .then(() => {
+      //redirect to /
+      res.redirect('/');
+    })
+    .catch(() => {
       res.redirect('/login');
-    }
-      // if (models.Users.compare(password, storedData.password, salt)) {
-      //   res.redirect('/');
-      //   console.log('HELLO')
-      // } else {
-      //   res.redirect('/login');
-      // } 
-
-
-    // } else {
-    //   res.redirect('/login');
-    // }
-  });
-});      
+    });
+});
   //if username exists
     //compare password
       //if pass word is correct
