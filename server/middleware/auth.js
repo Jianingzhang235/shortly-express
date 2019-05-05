@@ -8,7 +8,7 @@ module.exports.createSession = (req, res, next) => {
   //otherwise, attempt to load session from database
   //if !exists -> make new session
   //otherwise, set session on req object
-    //thing loading from db is legit put on req obj so middleware later has access to this data
+  //thing loading from db is legit put on req obj so middleware later has access to this data
   
   Promise.resolve(req.cookies.shortlyid)
     .then((hash) => {
@@ -18,13 +18,13 @@ module.exports.createSession = (req, res, next) => {
 
       }
       //attempt to load session from database
-      return models.Sessions.get({hash})
+      return models.Sessions.get({hash});
       //returns promise -- continue work if fails
-        //returns either promise or value
+      //returns either promise or value
     })
     .then((session) => {
       //if !exists -> make new session
-      if(!session) {
+      if (!session) {
         //make a sesion
         throw session;
       }
@@ -39,12 +39,12 @@ module.exports.createSession = (req, res, next) => {
         .then(session => {
           res.cookie('shortlyid', session.hash);
           return session;
-        })
+        });
     })
     .then((session) => {
       req.session = session;
       next();
-    })
+    });
 
 };
 //if you catch an error and handle correctly will continue!
@@ -54,3 +54,10 @@ module.exports.createSession = (req, res, next) => {
 // Add additional authentication middleware functions below
 /************************************************************/
 
+module.exports.verifySession = (req, res, next) => {
+  if (!models.Sessions.isLoggedIn(req.session)) {
+    res.redirect('/login');
+  } else {
+    next();
+  }
+};

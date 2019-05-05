@@ -40,8 +40,7 @@ app.get('/links', Auth.verifySession,
     });
 });
 
-app.post('/links', Auth.verifySession,
-(req, res, next) => {
+app.post('/links', Auth.verifySession, (req, res, next) => {
   var url = req.body.url;
   if (!models.Links.isValidUrl(url)) {
     // send back a 404 if link is not valid
@@ -81,16 +80,16 @@ app.post('/links', Auth.verifySession,
 /************************************************************/
 app.post('/signup', (req, res, next) => {
   //we need username, password -> put in object to store each user data
-    //access Users info --> models.Users.get({username})
-    //var username = req.body.username
-    //var password = req.body.password
-    //body is father of entire element
+  //access Users info --> models.Users.get({username})
+  //var username = req.body.username
+  //var password = req.body.password
+  //body is father of entire element
   //if username data exists,
-    //res.redirect(go '/signup')!
+  //res.redirect(go '/signup')!
   //if username doesn't exist, we can sign up user
-    //create username and password
-      //{username: username, password: password}
-    //res.redirect('/')
+  //create username and password
+  //{username: username, password: password}
+  //res.redirect('/')
 
   var username = req.body.username;
   var password = req.body.password;
@@ -100,20 +99,29 @@ app.post('/signup', (req, res, next) => {
       //upgrade session / associate with user
       if (user) {
         throw user;
+        
       }
       return models.Users.create({username: username, password: password});
     })
     .then(user => {
-      return Sessions.update({hash: req.session.hash}, {userId: results.insertId})
+      return models.Sessions.update({hash: req.session.hash}, {userId: results.insertId});
     })
     .then(() => {
       // redirect user to / route
       res.redirect('/');
       console.log('user created');
     })
+    .error(error => {
+      res.status(500).send(error);
+    })
     .catch(user => {
       res.redirect('/signup');
-    })
+    });
+    // .then(() => {
+    //     // redirect user to / route
+    //     res.redirect('/');
+    //     console.log('user created');
+    // });
 });
 
 //if username does not exist -> go back to /login
@@ -138,7 +146,7 @@ app.post('/login', (req, res, next) => {
   return models.Users.get({username: username})
     .then(storedData => {
       //if !found or !valid password
-      if (!user || models.User.compare(password, storedData.password, storedData.salt)){
+      if (!user || !models.Users.compare(password, storedData.password, storedData.salt)){
         //redirect to /login
       }
       return models.Sessions.update({id: req.session.id}, {userId: user.id});
